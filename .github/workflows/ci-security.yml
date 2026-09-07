@@ -1,9 +1,12 @@
 name: Build & Basic Security Checks
 
-# Manual-only: no publishing, no auto-runs. Dispatch from the branch you want
-# to validate:
+# No publishing. Runs on the ci/* branch that carries this file (so the checks
+# can run before the workflow is merged to main) and manually afterwards:
 #   gh workflow run ci-security.yml -R <owner>/<repo> --ref <branch>
 on:
+  push:
+    branches:
+      - 'ci/security-checks'
   workflow_dispatch:
 
 permissions:
