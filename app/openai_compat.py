@@ -5,39 +5,36 @@ POST /v1/audio/translations
 GET /v1/models
 """
 
+import logging
 import os
 import tempfile
-import logging
-import time
-from typing import Optional, List, Union
 from pathlib import Path
+from typing import List, Optional, Union
 
-from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
 import whisperx
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import JSONResponse, PlainTextResponse
 
-from app.schemas import (
-    ResponseFormat,
-    TranscriptionWord,
-    TranscriptionSegment,
-    TranscriptionVerboseJsonResponse,
-    OpenAIErrorDetail,
-    OpenAIErrorResponse,
-)
 from app.pipeline import (
-    DEVICE,
-    BATCH_SIZE,
-    CACHE_DIR,
     DEFAULT_MODEL,
-    load_whisper_model,
-    clear_gpu_memory,
     format_timestamp,
     get_canonical_models,
-    transcribe as pipeline_transcribe,
+)
+from app.pipeline import (
     align as pipeline_align,
-    _whisper_models as loaded_models,
+)
+from app.pipeline import (
+    transcribe as pipeline_transcribe,
 )
 from app.queue import run_in_queue
+from app.schemas import (
+    OpenAIErrorDetail,
+    OpenAIErrorResponse,
+    ResponseFormat,
+    TranscriptionSegment,
+    TranscriptionVerboseJsonResponse,
+    TranscriptionWord,
+)
 
 logger = logging.getLogger(__name__)
 

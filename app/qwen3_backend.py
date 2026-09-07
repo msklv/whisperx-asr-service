@@ -66,7 +66,7 @@ def _load_asr():
     if _asr is None:
         with _load_lock:
             if _asr is None:
-                from transformers import AutoProcessor, AutoModelForMultimodalLM
+                from transformers import AutoModelForMultimodalLM, AutoProcessor
 
                 logger.info(f"Loading Qwen3-ASR model: {ASR_MODEL_ID}")
                 t0 = time.time()
@@ -86,7 +86,7 @@ def _load_aligner():
     if _aligner is None:
         with _load_lock:
             if _aligner is None:
-                from transformers import AutoProcessor, AutoModelForTokenClassification
+                from transformers import AutoModelForTokenClassification, AutoProcessor
 
                 logger.info(f"Loading Qwen3 forced aligner: {ALIGNER_MODEL_ID}")
                 t0 = time.time()

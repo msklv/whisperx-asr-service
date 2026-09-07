@@ -3,36 +3,36 @@ WhisperX ASR API Service
 Compatible with openai-whisper-asr-webservice API endpoints
 """
 
-import os
-import time
-import tempfile
 import logging
+import os
+import tempfile
+import time
 import warnings
 from contextlib import asynccontextmanager
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
-from fastapi import FastAPI, File, UploadFile, Query, HTTPException
-from fastapi.responses import JSONResponse, Response
 import whisperx
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi.responses import JSONResponse, Response
 
-from app.version import __version__
+from app import metrics as prom_metrics
 from app.pipeline import (
-    DEVICE,
-    COMPUTE_TYPE,
     BATCH_SIZE,
-    HF_TOKEN,
+    COMPUTE_TYPE,
     DEFAULT_MODEL,
-    load_whisper_model,
-    clear_gpu_memory,
+    DEVICE,
     format_timestamp,
-    sanitize_float_values,
-    run_pipeline,
+    load_whisper_model,
     resolve_model_name,
+    run_pipeline,
+    sanitize_float_values,
+)
+from app.pipeline import (
     _whisper_models as loaded_models,
 )
-from app.queue import run_in_queue, get_queue_metrics
-from app import metrics as prom_metrics
+from app.queue import get_queue_metrics, run_in_queue
+from app.version import __version__
 
 # Suppress pyannote pooling warnings about degrees of freedom
 warnings.filterwarnings("ignore", message=".*degrees of freedom is <= 0.*")
@@ -321,7 +321,9 @@ async def queue_metrics():
 
 # Register OpenAI-compatible API routers
 # Import here to avoid circular imports (openai_compat imports from this module)
-from app.openai_compat import router as openai_router, models_router
+from app.openai_compat import models_router  # noqa: E402
+from app.openai_compat import router as openai_router  # noqa: E402
+
 app.include_router(openai_router)
 app.include_router(models_router)
 

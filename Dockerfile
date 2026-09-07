@@ -1,8 +1,9 @@
 # WhisperX ASR API Service Dockerfile
 #
 # Build args (override per image variant):
-#   TORCH_VERSION   - PyTorch version to install (default 2.7.1, broadly
-#                     compatible from Pascal through Hopper).
+#   TORCH_VERSION   - PyTorch version to install (default 2.11.0, broadly
+#                     compatible from Pascal through Hopper; bumped from 2.7.1
+#                     for CVE fixes in the cu126 line, see ci-security checks).
 #   TORCH_INDEX_URL - PyTorch wheel index URL (default cu126). For Blackwell
 #                     (RTX 50xx) use TORCH_VERSION=2.8.0 with cu128.
 #
@@ -14,7 +15,7 @@
 # - All pip installs in a single layer so the WhisperX-induced torch
 #   upgrade and subsequent re-pin do not persist as dead layers
 #   (~10 GB of stale torch copies in the previous layering).
-ARG TORCH_VERSION=2.7.1
+ARG TORCH_VERSION=2.11.0
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126
 
 FROM ubuntu:22.04
@@ -53,10 +54,10 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip && \
         --index-url ${TORCH_INDEX_URL} && \
     pip3 install --no-cache-dir "transformers>=5.13,<6" && \
     pip3 install --no-cache-dir \
-        fastapi==0.104.1 \
-        "uvicorn[standard]==0.24.0" \
-        python-multipart==0.0.6 \
-        pydantic==2.5.0 \
+        fastapi==0.141.1 \
+        "uvicorn[standard]==0.52.4" \
+        python-multipart==0.0.32 \
+        pydantic==2.13.5 \
         prometheus-client==0.20.0 \
         "ray[serve]>=2.9" \
         "protobuf<7"

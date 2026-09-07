@@ -1,9 +1,10 @@
 """
 OpenAI-compatible Pydantic models for Whisper API
 """
-from typing import Optional, List, Literal
-from pydantic import BaseModel, Field
 from enum import Enum
+from typing import List, Literal, Optional
+
+from pydantic import BaseModel, Field
 
 
 class ResponseFormat(str, Enum):

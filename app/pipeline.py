@@ -6,25 +6,25 @@ reusable functions consumed by both the legacy FastAPI endpoints and the
 Ray Serve deployments.
 """
 
-import os
-import gc
 import copy
+import gc
 import json
-import math
-import time
 import logging
+import math
+import os
 import threading
+import time
 import warnings
-from typing import Optional, Dict, Any, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 # Suppress pyannote's torchcodec warning -- we decode audio via whisperx.load_audio (ffmpeg),
 # not pyannote's built-in decoder, so the missing torchcodec is irrelevant.
 warnings.filterwarnings("ignore", message=".*torchcodec.*")
 
-import numpy as np
-import torch
-import whisperx
-from whisperx.diarize import DiarizationPipeline
+import numpy as np  # noqa: E402 — must come after warning suppression
+import torch  # noqa: E402
+import whisperx  # noqa: E402
+from whisperx.diarize import DiarizationPipeline  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

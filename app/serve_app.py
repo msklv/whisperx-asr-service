@@ -10,47 +10,48 @@ Start with:
     serve run app.serve_app:app
 """
 
-import os
-import time
 import logging
+import os
 import tempfile
+import time
 import warnings
-from typing import Optional, List
 from pathlib import Path
+from typing import Optional
 
-from fastapi import FastAPI, File, UploadFile, Form, Query, HTTPException, Request
-from fastapi.responses import JSONResponse, PlainTextResponse, Response
 import whisperx
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from ray import serve
 
-from app.version import __version__
+from app import metrics as prom_metrics
 from app.pipeline import (
-    DEVICE,
     COMPUTE_TYPE,
-    BATCH_SIZE,
     DEFAULT_MODEL,
+    DEVICE,
     format_timestamp,
-    sanitize_float_values,
-    resolve_model_name,
     get_canonical_models,
+    resolve_model_name,
+    sanitize_float_values,
+)
+from app.pipeline import (
     _whisper_models as loaded_models,
 )
-from app import metrics as prom_metrics
 from app.schemas import (
-    ResponseFormat,
-    TranscriptionWord,
-    TranscriptionSegment,
-    TranscriptionVerboseJsonResponse,
     OpenAIErrorDetail,
     OpenAIErrorResponse,
+    ResponseFormat,
+    TranscriptionSegment,
+    TranscriptionVerboseJsonResponse,
+    TranscriptionWord,
 )
 from app.serve_deployments import (
     PIPELINE_STRATEGY,
-    FullPipelineDeployment,
-    WhisperDeployment,
     AlignDeployment,
     DiarizeDeployment,
+    FullPipelineDeployment,
+    WhisperDeployment,
 )
+from app.version import __version__
 
 warnings.filterwarnings("ignore", message=".*degrees of freedom is <= 0.*")
 

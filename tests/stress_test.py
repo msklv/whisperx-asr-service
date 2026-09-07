@@ -23,14 +23,13 @@ Usage:
 """
 
 import argparse
-import os
-import sys
-import time
+import concurrent.futures
 import json
 import statistics
-import concurrent.futures
-from pathlib import Path
+import sys
+import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional
 
 import requests
@@ -276,8 +275,6 @@ def run_stress_test(
     print("  T=Transcription  A=Alignment  D=Diarization  (Y=pass, N=missing)")
     print("-" * 70)
 
-    sender = send_asr_request if endpoint == "asr" else send_openai_request
-
     wall_start = time.perf_counter()
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
@@ -290,7 +287,6 @@ def run_stress_test(
             futures[fut] = i
 
         for fut in concurrent.futures.as_completed(futures):
-            idx = futures[fut]
             result = fut.result()
             report.results.append(result)
 

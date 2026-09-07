@@ -1,14 +1,14 @@
 """Prometheus metric definitions and helpers, shared by main.py and serve_app.py."""
 
+import torch
 from prometheus_client import (
+    CONTENT_TYPE_LATEST,
     Counter,
     Gauge,
     Histogram,
     Info,
-    CONTENT_TYPE_LATEST,
     generate_latest,
 )
-import torch
 
 REQUESTS_TOTAL = Counter(
     "whisperx_requests_total",

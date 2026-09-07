@@ -12,25 +12,33 @@ Two strategies are available (selected via PIPELINE_STRATEGY env var):
       scaling per stage.
 """
 
-import os
 import logging
-from typing import Optional, List, Tuple
+import os
+from typing import List, Optional, Tuple
 
-import torch
 import numpy as np
+import torch
 from ray import serve
 
 from app.pipeline import (
-    run_pipeline as _run_pipeline,
-    transcribe as _transcribe,
-    align as _align,
-    diarize as _diarize,
-    load_whisper_model,
-    load_align_model,
-    load_diarize_pipeline,
     DEFAULT_MODEL,
     HF_TOKEN,
+    load_diarize_pipeline,
+    load_whisper_model,
 )
+from app.pipeline import (
+    align as _align,
+)
+from app.pipeline import (
+    diarize as _diarize,
+)
+from app.pipeline import (
+    run_pipeline as _run_pipeline,
+)
+from app.pipeline import (
+    transcribe as _transcribe,
+)
+
 
 def _attach_serve_handlers_to_app_logger():
     """
