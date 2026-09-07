@@ -49,6 +49,17 @@ ALIGNER_MODEL_ID = _env_or_default(
     "QWEN3_ALIGNER_MODEL", "Qwen/Qwen3-ForcedAligner-0.6B-hf"
 )
 
+# HF revisions pinned for supply-chain safety (reproducible weights, no
+# silent main-branch swaps). Bump deliberately when upgrading weights.
+# If QWEN3_ASR_MODEL/QWEN3_ALIGNER_MODEL point at a custom repo, set the
+# matching *_REVISION env (or "main") accordingly.
+ASR_REVISION = _env_or_default(
+    "QWEN3_ASR_REVISION", "bcd2b5b7f32b480ab5790554cfa8347f246a14f3"
+)
+ALIGNER_REVISION = _env_or_default(
+    "QWEN3_ALIGNER_REVISION", "c07281df297b9905d24a508279258cccf987a064"
+)
+
 # Standing context prepended to every request's system message. Important for
 # code-switched audio: with no language hint and no context, Qwen3-ASR picks
 # one language per chunk and TRANSLATES the other language into it. Any hint
@@ -70,10 +81,12 @@ def _load_asr():
 
                 logger.info(f"Loading Qwen3-ASR model: {ASR_MODEL_ID}")
                 t0 = time.time()
-                processor = AutoProcessor.from_pretrained(ASR_MODEL_ID)
+                processor = AutoProcessor.from_pretrained(
+                    ASR_MODEL_ID, revision=ASR_REVISION
+                )
                 dtype = torch.float16 if DEVICE == "cuda" else torch.float32
                 model = AutoModelForMultimodalLM.from_pretrained(
-                    ASR_MODEL_ID, dtype=dtype
+                    ASR_MODEL_ID, dtype=dtype, revision=ASR_REVISION
                 ).to(DEVICE)
                 model.eval()
                 _asr = (processor, model)
@@ -90,10 +103,12 @@ def _load_aligner():
 
                 logger.info(f"Loading Qwen3 forced aligner: {ALIGNER_MODEL_ID}")
                 t0 = time.time()
-                processor = AutoProcessor.from_pretrained(ALIGNER_MODEL_ID)
+                processor = AutoProcessor.from_pretrained(
+                    ALIGNER_MODEL_ID, revision=ALIGNER_REVISION
+                )
                 dtype = torch.bfloat16 if DEVICE == "cuda" else torch.float32
                 model = AutoModelForTokenClassification.from_pretrained(
-                    ALIGNER_MODEL_ID, dtype=dtype
+                    ALIGNER_MODEL_ID, dtype=dtype, revision=ALIGNER_REVISION
                 ).to(DEVICE)
                 model.eval()
                 _aligner = (processor, model)
