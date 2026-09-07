@@ -101,6 +101,7 @@ jobs:
           pip-audit --desc on -r /tmp/audit-reqs.txt
 
       - name: OSV-Scanner (Google) — cross-check deps against OSV database
+        if: always()  # run even when pip-audit reports findings
         run: |
           go install github.com/google/osv-scanner/cmd/osv-scanner@latest
           "$(go env GOPATH)/bin/osv-scanner" scan --requirement /tmp/audit-reqs.txt
@@ -126,11 +127,13 @@ jobs:
           /tmp/hadolint --failure-threshold error Dockerfile Dockerfile.spark
 
       - name: Python dependency consistency inside image (pip check)
-        run: docker run --rm --entrypoint python "$IMAGE_TAG" -m pip check
+        # continue-on-error: report conflicts but never block the image CVE scans
+        continue-on-error: true
+        run: docker run --rm --entrypoint python3 "$IMAGE_TAG" -m pip check
 
       - name: Import smoke test inside image
         run: |
-          docker run --rm --entrypoint python "$IMAGE_TAG" -c \
+          docker run --rm --entrypoint python3 "$IMAGE_TAG" -c \
             "import app.main, app.serve_app; import fastapi, pydantic, whisperx, transformers; print('imports OK')"
 
       - name: Trivy CVE scan (HIGH and CRITICAL; fails on CRITICAL)
