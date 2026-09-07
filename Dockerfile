@@ -60,8 +60,7 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip && \
         pydantic==2.13.5 \
         prometheus-client==0.20.0 \
         "ray[serve]>=2.9" \
-        "protobuf<7" \
-        "setuptools>=83"
+        "protobuf<7"
 
 # Prefer torch's bundled cuDNN over any system cuDNN
 ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/dist-packages/torch/lib:/usr/local/lib/python3.10/dist-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH
