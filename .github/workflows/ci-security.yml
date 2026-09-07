@@ -6,7 +6,8 @@ name: Build & Basic Security Checks
 on:
   push:
     branches:
-      - 'ci/security-checks'
+      - 'ci/**'
+      - 'hardening/**'
   workflow_dispatch:
 
 permissions:
@@ -38,21 +39,21 @@ jobs:
           python -m pip install --quiet --upgrade pip
           pip install --quiet ruff bandit
 
-      - name: Compile check (all sources)
-        run: python -m compileall -q app tests
-
-      - name: Ruff lint (E4/E7/E9/F + I rules)
-        run: ruff check --select E4,E7,E9,F,I app tests
-
-      - name: Bandit SAST (HIGH and MEDIUM)
-        run: bandit -r -q -ll app
-
       - name: Gitleaks secret scan (working tree + full git history)
         run: |
           docker run --rm \
             -v "$PWD":/repo -w /repo \
             ghcr.io/gitleaks/gitleaks:latest \
             detect --source /repo --redact --exit-code 1
+
+      - name: Bandit SAST (HIGH and MEDIUM)
+        run: bandit -r -q -ll app
+
+      - name: Compile check (all sources)
+        run: python -m compileall -q app tests
+
+      - name: Ruff lint (E4/E7/E9/F + I rules)
+        run: ruff check --select E4,E7,E9,F,I app tests
 
   # ---------------------------------------------------------------------------
   # Dependency vulnerability audit (pins mirrored from the Dockerfile)
@@ -72,24 +73,37 @@ jobs:
       - name: Install pip-audit
         run: python -m pip install --quiet --upgrade pip && pip install --quiet pip-audit
 
-      - name: Audit pinned runtime dependencies
+      - name: Audit pinned runtime dependencies (auto-extracted from Dockerfile)
         run: |
-          cat > /tmp/audit-reqs.txt <<'EOF'
-          # Direct pins/constraints from Dockerfile (ci-security workflow).
-          # Note: whisperX is installed from git in the image and cannot be
-          # audited here; the built image itself is scanned by Trivy instead.
-          fastapi==0.104.1
-          uvicorn[standard]==0.24.0
-          python-multipart==0.0.6
-          pydantic==2.5.0
-          prometheus-client==0.20.0
-          torch==2.7.1
-          torchaudio==2.7.1
-          transformers>=5.13,<6
-          ray[serve]>=2.9
-          protobuf<7
-          EOF
+          python3 - <<'PY'
+          import re
+          src = open('Dockerfile').read()
+          lines = src.splitlines()
+          out = []
+          m = re.search(r'^ARG TORCH_VERSION=(\S+)', src, re.M)
+          if m:
+              out += ['torch==' + m.group(1), 'torchaudio==' + m.group(1)]
+          m = re.search(r'pip3 install --no-cache-dir\s+"(transformers[^"]+)"', src)
+          if m:
+              out.append(m.group(1))
+          starts = [i for i, l in enumerate(lines)
+                    if l.startswith('pip3 install --no-cache-dir') and l.rstrip().endswith('\\')]
+          if starts:
+              for l in lines[starts[-1] + 1:]:
+                  if not re.match(r'^ {8}\S', l):
+                      break
+                  pkg = l.strip().rstrip('\\').strip().strip('"')
+                  if pkg and '${' not in pkg:
+                      out.append(pkg)
+          open('/tmp/audit-reqs.txt', 'w').write('\n'.join(out) + '\n')
+          print('Auditing:', ', '.join(out))
+          PY
           pip-audit --desc on -r /tmp/audit-reqs.txt
+
+      - name: OSV-Scanner (Google) — cross-check deps against OSV database
+        run: |
+          go install github.com/google/osv-scanner/cmd/osv-scanner@latest
+          "$(go env GOPATH)/bin/osv-scanner" scan --requirement /tmp/audit-reqs.txt
 
   # ---------------------------------------------------------------------------
   # Container build + image-level checks (no push, no publish)
@@ -106,9 +120,10 @@ jobs:
 
       - name: Hadolint Dockerfiles (fail on errors only)
         run: |
-          docker run --rm -v "$PWD":/lint -w /lint \
-            ghcr.io/hadolint/hadolint:latest \
-            --failure-threshold error Dockerfile Dockerfile.spark
+          curl -sSfL -o /tmp/hadolint \
+            https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x /tmp/hadolint
+          /tmp/hadolint --failure-threshold error Dockerfile Dockerfile.spark
 
       - name: Python dependency consistency inside image (pip check)
         run: docker run --rm --entrypoint python "$IMAGE_TAG" -m pip check
@@ -128,3 +143,8 @@ jobs:
             --exit-code 1 \
             --timeout 20m \
             "$IMAGE_TAG"
+
+      - name: OSV-Scanner (Google) — container image scan
+        run: |
+          go install github.com/google/osv-scanner/cmd/osv-scanner@latest
+          "$(go env GOPATH)/bin/osv-scanner" scan --docker "$IMAGE_TAG"
