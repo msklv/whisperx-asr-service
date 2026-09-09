@@ -108,10 +108,11 @@ jobs:
       - name: OSV-Scanner (Google) — cross-check deps against OSV database
         if: always()  # run even when pip-audit reports findings
         run: |
-          # Pinned: v2's transitive resolver fails on ray[serve] metadata
-          # (deps.dev lacks opentelemetry-exporter-prometheus pin), and
+          # Pinned; v2 lives under the /v2 module path (plain path 404s).
+          # --no-resolve: v2's transitive resolver fails on ray[serve]
+          # metadata (deps.dev lacks opentelemetry-exporter-prometheus pin);
           # transitive deps are covered by the in-image pip-audit anyway.
-          go install github.com/google/osv-scanner/cmd/osv-scanner@v2.5.1
+          go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.5.1
           mkdir -p /tmp/osv-audit
           cp /tmp/audit-reqs.txt /tmp/osv-audit/requirements.txt
           cp osv-scanner.toml /tmp/osv-audit/osv-scanner.toml
