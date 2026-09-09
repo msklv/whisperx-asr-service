@@ -6,7 +6,6 @@ name: Build & Basic Security Checks
 on:
   push:
     branches:
-      - 'ci/**'
       - 'hardening/**'
   workflow_dispatch:
 
@@ -98,15 +97,25 @@ jobs:
           open('/tmp/audit-reqs.txt', 'w').write('\n'.join(out) + '\n')
           print('Auditing:', ', '.join(out))
           PY
-          pip-audit --desc on -r /tmp/audit-reqs.txt
+          # --ignore-vuln: accepted risks documented in osv-scanner.toml
+          # (torch CVE-2025-3000: no torchaudio 2.13 exists anywhere;
+          #  setuptools <83: build-time sdist flaw, torch needs <82)
+          pip-audit --desc on -r /tmp/audit-reqs.txt \
+            --ignore-vuln PYSEC-2025-194 --ignore-vuln GHSA-rrmf-rvhw-rf47 \
+            --ignore-vuln PYSEC-2026-3447 --ignore-vuln GHSA-h35f-9h28-mq5c \
+            --ignore-vuln GHSA-8mgp-746c-j5xp --ignore-vuln PYSEC-2026-3740
 
       - name: OSV-Scanner (Google) — cross-check deps against OSV database
         if: always()  # run even when pip-audit reports findings
         run: |
-          go install github.com/google/osv-scanner/cmd/osv-scanner@latest
+          # Pinned: v2's transitive resolver fails on ray[serve] metadata
+          # (deps.dev lacks opentelemetry-exporter-prometheus pin), and
+          # transitive deps are covered by the in-image pip-audit anyway.
+          go install github.com/google/osv-scanner/cmd/osv-scanner@v2.5.1
           mkdir -p /tmp/osv-audit
           cp /tmp/audit-reqs.txt /tmp/osv-audit/requirements.txt
-          "$(go env GOPATH)/bin/osv-scanner" scan /tmp/osv-audit
+          cp osv-scanner.toml /tmp/osv-audit/osv-scanner.toml
+          "$(go env GOPATH)/bin/osv-scanner" scan --no-resolve --config /tmp/osv-audit/osv-scanner.toml /tmp/osv-audit
 
   # ---------------------------------------------------------------------------
   # Container build + image-level checks (no push, no publish)
@@ -118,7 +127,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Docker build (default variant, torch 2.7.1 cu126)
+      - name: Docker build (default variant, torch 2.11.0 cu126)
         run: docker build --tag "$IMAGE_TAG" .
 
       - name: Hadolint Dockerfiles (fail on errors only)

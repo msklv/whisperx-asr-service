@@ -1,0 +1,42 @@
+# osv-scanner config — accepted-risk register (mirrors pip-audit ignores in
+# .github/workflows/ci-security.yml). Keep reasons short; remove an entry as
+# soon as an upgrade becomes possible.
+#
+# Copy this file next to the scanned requirements (the CI workflow does it).
+
+# torch jit.script memory-corruption (CVE-2025-3000). Fix lands only in
+# torch 2.13, for which NO matching torchaudio exists on any PyTorch index
+# (torchaudio is frozen at 2.11.0 across cu126/cu128/cu130 — bumping torch
+# alone breaks the torch/torchaudio pair whisperX needs). Attack requires a
+# local host + loading a malicious TorchScript model; the service never
+# loads third-party TorchScript. CVSS 4.0: LOW.
+[[IgnoredVulns]]
+id = "GHSA-rrmf-rvhw-rf47"
+reason = "fix only in torch 2.13; no torchaudio 2.13 exists (frozen at 2.11) — pair needed by whisperX; local-only TorchScript attack vector, unused by this service"
+
+[[IgnoredVulns]]
+id = "PYSEC-2025-194"
+reason = "alias of GHSA-rrmf-rvhw-rf47 (CVE-2025-3000); same accepted risk"
+
+# nltk model-artifact path-sec bypass (CVE-2026-81726). Vendor fix does not
+# exist yet (3.10.3 is last_affected; we pin the newest release, which closes
+# the exploited CVE-2026-79675 critical + 2 highs). NLTK data is pre-baked at
+# build time (punkt_tab); the runtime never calls nltk.download.
+[[IgnoredVulns]]
+id = "GHSA-8mgp-746c-j5xp"
+reason = "no vendor fix yet (3.10.3 = last_affected); runtime never downloads nltk artifacts (data pre-baked in image)"
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3740"
+reason = "alias of GHSA-8mgp-746c-j5xp; same accepted risk"
+
+# setuptools <83 MANIFEST.in NFC/NFD exclusion bypass: build-time-only sdist
+# packaging flaw, affects macOS maintainers publishing sdists. Not present in
+# the image runtime attack surface, and torch requires setuptools<82.
+[[IgnoredVulns]]
+id = "PYSEC-2026-3447"
+reason = "build-time sdist packaging on macOS only; runtime N/A; torch requires setuptools<82"
+
+[[IgnoredVulns]]
+id = "GHSA-h35f-9h28-mq5c"
+reason = "alias of PYSEC-2026-3447; same accepted risk"

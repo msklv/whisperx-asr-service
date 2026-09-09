@@ -52,15 +52,22 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip && \
         torch==${TORCH_VERSION} \
         torchaudio==${TORCH_VERSION} \
         --index-url ${TORCH_INDEX_URL} && \
-    pip3 install --no-cache-dir "transformers>=5.13,<6" && \
+    pip3 install --no-cache-dir "transformers==5.16.1" && \
     pip3 install --no-cache-dir \
         fastapi==0.141.1 \
         "uvicorn[standard]==0.52.4" \
         python-multipart==0.0.32 \
         pydantic==2.13.5 \
         prometheus-client==0.20.0 \
-        "ray[serve]>=2.9" \
-        "protobuf<7"
+        "ray[serve]==2.58.0" \
+        "nltk==3.10.3" \
+        "protobuf==6.33.6"
+
+# Strip transformers' test module: it hardcodes an hf_ token sample that KCS
+# flags as a CRITICAL secret (every 5.x ships it; runtime never imports it).
+# Keeps the image free of the finding instead of per-scan acknowledgement.
+RUN rm -f /usr/local/lib/python3.10/dist-packages/transformers/testing_utils.py && \
+    find /usr/local/lib/python3.10/dist-packages/transformers -name 'testing_utils*.pyc' -delete
 
 # Prefer torch's bundled cuDNN over any system cuDNN
 ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/dist-packages/torch/lib:/usr/local/lib/python3.10/dist-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH
